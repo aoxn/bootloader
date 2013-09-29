@@ -1,4 +1,4 @@
-#define ROOT_CNT 0x1E0
+#define ROOT_CNT 0xE0
 
 .code16
 .section .text
@@ -20,13 +20,13 @@ FAT_NUMS:
 ROOT_ENTRY_CNT:
 	.word ROOT_CNT
 TLT_SECS:
-	.word 0x2fff
+	.word 0xB40
 MEDIA_DESC:
-	.byte 0xF8
+	.byte 0xF0
 SECS_PER_FAT:
-	.word 0x10
+	.word 0x9
 SECS_PER_TRACK:
-	.word 0x32
+	.word 0x12
 HEADS_CNT:
 	.word 0x02
 HIDDEN_SECS:
@@ -47,12 +47,12 @@ VOL_ID:
 FILE_SYSTEM_TYPE:
 	.ascii "FAT16  "
 BOOT_FILE:
-	.ascii "MAKEFILETXT"
+	.ascii "BOOT    TXT"
 #define DATA_AREA 0x9000
 #define STACK_START 0x7c00
-#define ROOT_DIR_SEC_START 21
+#define ROOT_DIR_SEC_START 0x13
 #define ROOT_DIR_SECS (ROOT_CNT*32+511)/512	
-#define DATA_SEC_START (ROOT_DIR_SEC_START+ROOT_DIR_SECS)
+#define DATA_SEC_START (ROOT_DIR_SEC_START+ROOT_DIR_SECS-2)
 #define SETUP_SEG 0x4000
 
 _start:
@@ -86,7 +86,7 @@ real_start:
 	push %eax
 	mov $0x1,%eax
 	mov $DATA_AREA,%ebx
-	mov $0x09,%ecx
+	mov SECS_PER_FAT,%cx
 	call read_secs
 	pop %eax
 	
@@ -95,7 +95,7 @@ real_start:
 read_loader:
 	push %ebx
 	push %eax
-	cmp $0xffff,%eax
+	cmp $0xfff,%eax
 	je 2f
 	add $DATA_SEC_START,%eax
 	mov $0x1,%ecx
@@ -152,24 +152,20 @@ find_file:
 
 find_next_sec:
 	mov %eax,%edx
-	
+		
 	mov $0x03,%ecx
 	mul %cl
-	inc %eax
 	shr $0x01,%eax
 	
 	mov %eax,%esi
+	mov (%bx,%si),%cl
+	mov 1(%bx,%si),%ch
 	and $0x01,%edx
 	cmp $0,%edx
 	je EVEN
-	mov (%bx,%si),%ch
-	mov -1(%bx,%si),%cl
 	shrl $0x04,%ecx
 	jmp DONE
 EVEN:
-	mov (%bx,%si),%cl
-	mov -1(%bx,%si),%ch
-	
 	and $0x00000fff,%ecx
 DONE:	
 	mov %ecx,%eax
