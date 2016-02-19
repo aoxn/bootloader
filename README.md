@@ -1,4 +1,4 @@
-sp
+bootloader
 ==
 
-This is the first git test with os 
+load linux kernel into memory from fat16 disk 
